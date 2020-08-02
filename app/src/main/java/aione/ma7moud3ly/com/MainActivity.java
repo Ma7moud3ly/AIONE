@@ -52,17 +52,13 @@ public class MainActivity extends AppCompatActivity {
         script_list.add(new Script("shell script", ".sh", "sh"));
         script_list.add(new Script("python script", ".py", "python3.8"));
         script_list.add(new Script("Lua script", ".lua", "lua"));
-        //script_list.add(new Script("Ruby script", ".rb", "ruby"));
-        //script_list.add(new Script("nodejs script", ".js", "node"));
         script_list.add(new Script("php script", ".sphp", "php -f"));
         script_list.add(new Script("php web page", ".php", "phphtml"));
         script_list.add(new Script("HTML web page", ".html", "html"));
         script_list.add(new Script("text file", ".txt", ""));
-        //script_list.add(new Script("ffmpeg script", ".mpeg", "ffmpeg"));
         script_list.add(new Script("something else", ".txt", ""));
         data_dir = c.getApplicationInfo().dataDir;
     }
-
 
 
     @Override

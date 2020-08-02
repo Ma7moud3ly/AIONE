@@ -13,6 +13,7 @@ import android.text.Html;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -57,7 +58,11 @@ public class Editor {
         this.activity = (Activity) context;
         this.isDark = isDark;
         getEditorSettings();
+        editor.setOnTouchListener(on_touch);
     }
+
+
+
 
     public Editor(String path, String name) {
         this.path = path;
@@ -307,6 +312,37 @@ public class Editor {
 
     }
 
+    //on touch scale
+    private int mBaseDist;
+    private float mBaseRatio;
+    private View.OnTouchListener on_touch = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            if (event.getPointerCount() == 2) {
+                int action = event.getAction();
+                int pureaction = action & MotionEvent.ACTION_MASK;
+                if (pureaction == MotionEvent.ACTION_POINTER_DOWN) {
+                    mBaseDist = getDistance(event);
+                    mBaseRatio = font_size;
+                } else {
+                    float delta = (getDistance(event) - mBaseDist) / 200;
+                    float multi = (float) Math.pow(2, delta);
+                    font_size = (int) Math.min(100, Math.max(5, mBaseRatio * multi));
+                    //Toast.makeText(context, "" + font_size, Toast.LENGTH_SHORT).show();
+                    editor.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+                    lines.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+                    count_lines();
+                }
+            }
+            return false;
+        }
+    };
+
+    private int getDistance(MotionEvent event) {
+        int dx = (int) (event.getX(0) - event.getX(1));
+        int dy = (int) (event.getY(0) - event.getY(1));
+        return (int) (Math.sqrt(dx * dx + dy * dy));
+    }
 
     public void newScript() {
         editor.setText("");
@@ -320,7 +356,6 @@ public class Editor {
         context.startActivity(new Intent(context, ScriptsActivity.class));
         activity.finish();
     }
-
 
     public void setEditorSettings() {
         SharedPreferences.Editor sharedPrefEditor = activity.getPreferences(Context.MODE_PRIVATE).edit();

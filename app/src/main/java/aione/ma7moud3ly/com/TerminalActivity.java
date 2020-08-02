@@ -1,24 +1,27 @@
 package aione.ma7moud3ly.com;
 
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
+import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import java.util.ArrayList;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -29,11 +32,12 @@ public class TerminalActivity extends AppCompatActivity {
     private ScrollView scroll;
     private TextView cursor;
     private TextView directory;
+    private View terminal_btns;
     public static int history_index;
     private ArrayList<String> history = new ArrayList<>();
     private Cursor dbCursor;
     public static SQLiteDatabase settingsDB;
-    private int fontSize;
+    private int font_size;
     private boolean isDark = true;
     private String current_directory = "";
     private Interface mInterface;
@@ -48,6 +52,15 @@ public class TerminalActivity extends AppCompatActivity {
         script();
     }
 
+    private boolean keyboardShown(View rootView) {
+        final int softKeyboardHeight = 100;
+        Rect r = new Rect();
+        rootView.getWindowVisibleDisplayFrame(r);
+        DisplayMetrics dm = rootView.getResources().getDisplayMetrics();
+        int heightDiff = rootView.getBottom() - r.bottom;
+        return heightDiff > softKeyboardHeight * dm.density;
+    }
+
     private void script() {
         Intent intent = getIntent();
         if (intent.hasExtra("path")) {
@@ -56,7 +69,6 @@ public class TerminalActivity extends AppCompatActivity {
             output.append("$ " + path + "\n");
             new Interface(output, input, scroll, directory, run, path);
         }
-
     }
 
     private void init_terminal() {
@@ -66,6 +78,7 @@ public class TerminalActivity extends AppCompatActivity {
         cursor = findViewById(R.id.cursor);
         input = findViewById(R.id.input);
         scroll = findViewById(R.id.scroll);
+        terminal_btns = findViewById(R.id.terminal_btns);
         directory = findViewById(R.id.directory);
         directory.setText(current_directory);
         directory.setTextIsSelectable(true);
@@ -75,9 +88,23 @@ public class TerminalActivity extends AppCompatActivity {
         output.setTextIsSelectable(true);
         //output.setHorizontallyScrolling(true);
         //output.setHorizontalScrollBarEnabled(true);
-        output.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
-        input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
-        cursor.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
+        output.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+        input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+        cursor.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+
+        input.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (keyboardShown(input.getRootView())) {
+                    terminal_btns.setVisibility(View.GONE);
+                    directory.setVisibility(View.GONE);
+                } else {
+                    terminal_btns.setVisibility(View.VISIBLE);
+                    directory.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             output.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
@@ -148,11 +175,11 @@ public class TerminalActivity extends AppCompatActivity {
     }
 
     private void zoom(boolean in) {
-        if (in && fontSize < 40) fontSize += 5;
-        else if (!in && fontSize > 5) fontSize -= 5;
-        cursor.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
-        input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
-        output.setTextSize(TypedValue.COMPLEX_UNIT_DIP, fontSize);
+        if (in && font_size < 40) font_size += 5;
+        else if (!in && font_size > 5) font_size -= 5;
+        cursor.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+        input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
+        output.setTextSize(TypedValue.COMPLEX_UNIT_DIP, font_size);
     }
 
     public void clear() {
@@ -164,8 +191,8 @@ public class TerminalActivity extends AppCompatActivity {
 
     private void getEditorSettings() {
         SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        fontSize = sharedPref.getInt("font_size", 12);
-        isDark = sharedPref.getBoolean("dark_mode", false);
+        font_size = sharedPref.getInt("font_size", 12);
+        isDark = sharedPref.getBoolean("dark_mode", true);
         current_directory = sharedPref.getString("pwd", "/");
         settingsDB = openOrCreateDatabase("settings", MODE_PRIVATE, null);
         settingsDB.execSQL("CREATE TABLE IF NOT EXISTS history(value VARCHAR);");
@@ -176,7 +203,7 @@ public class TerminalActivity extends AppCompatActivity {
 
     private void setEditorSettings() {
         SharedPreferences.Editor sharedPref = getPreferences(Context.MODE_PRIVATE).edit();
-        sharedPref.putInt("font_size", fontSize);
+        sharedPref.putInt("font_size", font_size);
         sharedPref.putBoolean("dark_mode", isDark);
         sharedPref.putString("pwd", Interface.pwd);
         sharedPref.commit();
@@ -218,7 +245,7 @@ public class TerminalActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         history_index = history.size() - 1;
-        hideKeyboard(this);
+        //hideKeyboard(this);
         mInterface.EvalShellCommand(code);
         setEditorSettings();
     }

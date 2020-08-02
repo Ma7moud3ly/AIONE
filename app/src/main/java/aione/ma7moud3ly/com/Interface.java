@@ -96,6 +96,8 @@ public class Interface {
         set.add("PATH", "=", "$path");
         set.add("TEMP", "=", "$temp");
         set.add("export LD_LIBRARY_PATH", "=", "$dir/bootstrap/lib");
+        set.add("export TMPDIR", "=", "$dir/bootstrap/tmp");
+
         set.add("echo", " ", "\"" + SS + "$(set)" + TT + "\"");
         String[] commands = {"sh", "-c", set.toString()};
         new ShellCommands(commands, response, onscript).run();
@@ -109,6 +111,7 @@ public class Interface {
         Set tail = new Set();
         for (String key : old_set.keySet()) pre.add(key, "=", old_set.get(key));
         pre.add("export LD_LIBRARY_PATH", "=", "$dir/bootstrap/lib");
+        pre.add("export TMPDIR", "=", "$dir/bootstrap/tmp");
         pre.add("PATH", "=", "$path");
         pre.add("TEMP", "=", "$temp");
         pre.add("cd", " ", "$pwd");
@@ -120,18 +123,23 @@ public class Interface {
     }
 
     private void clear() {
-        input.setText("");
-        result.setText("");
+        result.post(new Runnable() {
+            @Override
+            public void run() {
+                input.setText("");
+                result.setText("");
+            }
+        });
     }
 
     private String hasClear(String result) {
-        int i = -1;
-        if ((i = result.lastIndexOf(CLEAR)) != -1) {
+        if (result.contains(CLEAR)) {
             clear();
-            result = result.substring(i + CLEAR.length());
+            result = result.replace(CLEAR, "");
         }
         return result;
     }
+
 
     private ShellResponse response = new ShellResponse() {
         @Override
